@@ -23,13 +23,14 @@ describe Tsung::Rails::Config do
       end
 
       it "is relative to the rails root" do
-        ::Rails.should_receive(:root).and_return("/rails")
+        ::Rails.should_receive(:root).twice.and_return("/rails")
         subject.recordings_dir #.should == "/rails/recordings"
       end
     end
 
     context "no rails" do
       it "is relative to the current directory" do
+        ::Rails.should_receive(:root).and_return(nil)
         subject.recordings_dir.should == File.expand_path('./recordings')
       end
     end

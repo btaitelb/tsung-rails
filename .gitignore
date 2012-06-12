@@ -4,3 +4,6 @@ Gemfile.lock
 pkg/*
 results/
 recordings/
+spec/dummy/db/*.sqlite
+spec/dummy/log/*.log
+spec/dummy/tmp

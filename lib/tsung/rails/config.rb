@@ -39,7 +39,7 @@ module Tsung
         end
 
         def default_recordings_dir
-          if defined?(::Rails)
+          if defined?(::Rails) && ::Rails.root
             "#{::Rails.root}/recordings"
           else
             File.expand_path('./recordings')
