@@ -60,7 +60,7 @@ module Tsung
 
         def default_results_dir
           if defined?(::Rails)
-            "#{::Rails.root/results}"
+            "#{::Rails.root}/results"
           else
             File.expand_path('./results')
           end

@@ -43,13 +43,17 @@ module Tsung
         recording = read_recording(recording_file)
 
         # TODO: move this to configuration param
-        filtered_domains = ['.googleapis.com',
-                            '.googleusercontent.com',
-                            'safebrowsing.clients.google.com',
-                            'safebrowsing-cache.google.com',
-                            '.fxfeeds.mozilla.com',
-                            '.newsrss.bbc.co.uk',
-                            '.feeds.bbci.co.uk']
+        # TODO: switch to whitelisting just the domains we want
+        filtered_domains = [/\.googleapis\.com/,
+                            /\.googleusercontent\.com/,
+                            /\.google-analytics\.com/,
+                            /safebrowsing\.clients\.google\.com/,
+                            /safebrowsing-cache\.google\.com/,
+                            /\.fxfeeds\.mozilla\.com/,
+                            /\.newsrss\.bbc\.co\.uk/,
+                            /\.feeds\.bbci\.co\.uk/,
+                            /\.addthis\.com/,
+                            /\.addthisedge\.com/]
 
         remove_domains(recording, filtered_domains)
         update_session_name(recording, recording_name)
@@ -102,10 +106,13 @@ module Tsung
       end
 
       def remove_domains(recording, domains)
-        domains.each do |domain|
-          recording.xpath("//request/http[contains(@url, '#{domain}')]").each do |node|
-            node.parent.unlink
+        in_bad_domain = false
+        recording.xpath("//request/http").each do |node|
+          if node['url'] =~ /\Ahttps?:\/\//
+            in_domain = domains.any?{|d| node['url'] =~ d}
           end
+
+          node.parent.unlink if in_bad_domain
         end
       end
 
@@ -116,6 +123,7 @@ module Tsung
 
       def fix_csrf_token(recording)
         recording.xpath("//request/http[@method = 'GET']").each do |node|
+          next if node['url'] =~ /\.(css)|(js)|(png)|(gif)|(jpg)|(ico)|(pdf)\z/i
           node.before('<dyn_variable name="authenticity_token"/>')
         end
         recording.xpath("//request/http[contains(@contents, 'authenticity_token')]").each do |node|
@@ -129,7 +137,7 @@ module Tsung
         recording.xpath("//request/http[contains(@contents, '__random__')]").each do |node|
           node.parent["subst"] = "true"
           contents = node["contents"]
-          node["contents"] = contents.sub(/=__random__/, '=%%tsung_rails:random%%')
+          node["contents"] = contents.gsub(/__random__/, '%%tsung_rails:random%%')
         end
       end
 

@@ -9,8 +9,11 @@ module Tsung
         puts "Playing back #{Tsung::Rails.playback_file}"
         prepare_playback
 
+        erl_libs = "#{ENV['ERL_LIBS']}:#{Tsung::Rails.results_dir}"
+        env = { 'ERL_LIBS' => erl_libs }
+
         require 'open3'
-        Open3.popen2e('tsung', '-f', Tsung::Rails.playback_file, 'start') { |input, output_error, wait_thread|
+        Open3.popen2e(env, 'tsung', '-f', Tsung::Rails.playback_file, 'start') { |input, output_error, wait_thread|
           output_error.each { |line|
             puts line
             if line =~ /Log directory is: ([^"]*)/
@@ -44,7 +47,9 @@ module Tsung
 
         # TODO: figure out who the server is and update the file
 
-        File.open(Tsung::Rails.playback_file, 'w') {|f| f.write(template)}
+        unless File.exists?(Tsung::Rails.playback_file)
+          File.open(Tsung::Rails.playback_file, 'w') {|f| f.write(template)}
+        end
       end
 
       def create_results_dir
@@ -52,7 +57,8 @@ module Tsung
       end
 
       def copy_erlang_binaries
-        `cp #{Tsung::Rails.erlang_dir}/*.beam #{Tsung::Rails.results_dir}`
+        `mkdir -p #{Tsung::Rails.results_dir}/ebin`
+        `cp #{Tsung::Rails.erlang_dir}/*.beam #{Tsung::Rails.results_dir}/ebin`
       end
 
       def recording_file
